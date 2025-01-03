@@ -5,7 +5,7 @@
     <DataSource Name="PSMiSXeDataWarehouse">
       <ConnectionProperties>
         <DataProvider>SQL</DataProvider>
-        <ConnectString>Data Source=EGC-SQL01\EXTRACT;Initial Catalog=egcDWHS</ConnectString>
+        <ConnectString>Data Source=egc-stage1;Initial Catalog=egcDWHS</ConnectString>
         <IntegratedSecurity>true</IntegratedSecurity>
       </ConnectionProperties>
       <rd:SecurityType>Integrated</rd:SecurityType>
@@ -14,7 +14,7 @@
     <DataSource Name="PSMiDWHSDerivedTables">
       <ConnectionProperties>
         <DataProvider>SQL</DataProvider>
-        <ConnectString>Data Source=egc-sql01\extract;Initial Catalog=egcDerivedTables</ConnectString>
+        <ConnectString>Data Source=egc-stage1;Initial Catalog=egcDerivedTables</ConnectString>
         <IntegratedSecurity>true</IntegratedSecurity>
       </ConnectionProperties>
       <rd:SecurityType>Integrated</rd:SecurityType>
@@ -205,7 +205,7 @@ WHERE     (DateRange = @DtRng)</CommandText>
                          a.vendName AS vendname, a.vendProd AS vendprod, CASE WHEN managedfl = 1 AND inventoryty = 'c' THEN 0 WHEN managedfl = 0 AND ItemPrice = 0 THEN 0 ELSE (dbo.CnvReal(taxamount, 1) 
                          + dbo.CnvReal(taxamount, 2) + dbo.CnvReal(taxamount, 3) + dbo.CnvReal(taxamount + ';', 4)) * CAST(a.salesexrate AS Real) END AS TaxAmount, a.stageCd AS stagecd, a.qtyShipReal AS qtyship, a.srDept, 
                          a.srGLCode, a.srMachine, a.srEmployee, a.srChargeNo, UPPER(a.Inventoryty) AS Inventoryty, a.listPrice, a.icswUser4, a.lotNo, a.IcswUser10, a.BOR, a.poPrice AS price, a.poehCurrDesc AS currencytype, 
-                         CASE WHEN [ordertype] = 'P' THEN [orderaltno] ELSE '' END AS orderaltno, CASE WHEN [ordertype] = 'P' THEN [linealtno] ELSE '' END AS linealtno, a.poehRcvexrate AS rcvexrate, 
+                         CASE WHEN [ordertype] = 'P' THEN [orderaltno] ELSE '' END AS orderaltno, CASE WHEN [ordertype] = 'P' THEN [linealtno] ELSE '' END AS linealtno, a.poehRcvexrate AS rcvexrate,  a.poehCurrencyty,
                          a.poehRcvexrate * a.poPrice AS PriceBaseCur, a.baseCurrencyDesc AS [Base Currency], a.Refer, CASE WHEN managedfl = 1 AND inventoryty = 'c' THEN [stdPrice] * CAST(a.salesexrate AS Real) 
                          WHEN managedfl = 0 AND ItemPrice = 0 THEN ISNULL([stdPrice], 0) * CAST(a.salesexrate AS Real) ELSE (ItemPrice / Unitconv) * CAST(a.salesexrate AS Real) END AS UnitPrice, a.Unit, 
                          a.qtyShipReal * a.unitConv AS Unitconv, a.unitConv AS Pack, a.commodityCd, a.oeehUser4 AS [Approved By], a.oeehUser3 AS [BT/MACH#], a.replCost, a.oeehUser1 AS OP, a.basePrice, 
@@ -224,8 +224,7 @@ WHERE     (DateRange = @DtRng)</CommandText>
                          b.[Customer Quantity4] &lt;&gt; 0 THEN b.[Customer Price4] WHEN qtyShipReal * unitConv &gt; b.[Customer Quantity3] AND 
                          b.[Customer Quantity3] &lt;&gt; 0 THEN b.[Customer Price3] WHEN qtyShipReal * unitConv &gt; b.[Customer Quantity2] AND b.[Customer Quantity2] &lt;&gt; 0 THEN b.[Customer Price2] ELSE b.[Customer Price1] END, 0) 
                          AS CurrentSalesPrice, b.SalesCurrency, ISNULL(c.salesexrate, 1) AS PExch, ISNULL(d .salesexrate, 1) AS SExch, a.oeehUser5, Row_Number() OVER (Partition BY a.cono, a.orderno, a.ordersuf
-ORDER BY ISNULL(a.[oeehAddonAmt], 0)) AS oeehaddonrownum, a.[oeehAddonDesc], a.[oeehAddonType], ISNULL(a.[oeehAddonAmt], 0) AS [oeehAddonAmt], a.[rebateKey], 
-                         a.[rebatePct], a.[rebateAmt]
+ORDER BY ISNULL(a.[oeehAddonAmt], 0)) AS oeehaddonrownum, a.[oeehAddonDesc], a.[oeehAddonType], ISNULL(a.[oeehAddonAmt], 0) AS [oeehAddonAmt], a.[rebateKey], a.[rebatePct], a.[rebateAmt]
 FROM            sxInvoicingExtract AS a LEFT OUTER JOIN
                          egcCustomerVendorPricing AS b ON a.Cono = b.CompanyNo AND a.Divno = b.CustomerDivision AND a.itemNumber = b.[Part Number] AND b.RecordRank = 1 LEFT OUTER JOIN
                          egcDWHS.dbo.sastc AS c ON a.Cono = c.cono AND b.PuchaseCurrency = c.currencyty LEFT OUTER JOIN
@@ -258,7 +257,7 @@ GROUP BY a.Cono, a.itemNumber, a.clientItemNumber, a.managedFl, a.sxLPP, a.sales
                          b.[Customer Quantity4] &lt;&gt; 0 THEN b.[Customer Price4] WHEN qtyShipReal * unitConv &gt; b.[Customer Quantity3] AND 
                          b.[Customer Quantity3] &lt;&gt; 0 THEN b.[Customer Price3] WHEN qtyShipReal * unitConv &gt; b.[Customer Quantity2] AND b.[Customer Quantity2] &lt;&gt; 0 THEN b.[Customer Price2] ELSE b.[Customer Price1] END, 
                          b.SalesCurrency, b.PuchaseCurrency, ISNULL(c.salesexrate, 1), ISNULL(d .salesexrate, 1), a.oeehUser5, [oeehAddonDesc], a.[oeehAddonType], a.[oeehAddonAmt], a.srChargeNo, a.[rebateKey], a.[rebatePct], 
-                         a.[rebateAmt]</CommandText>
+                         a.[rebateAmt], a.poehCurrencyty</CommandText>
       </Query>
       <Fields>
         <Field Name="icswUser14">
@@ -532,6 +531,10 @@ GROUP BY a.Cono, a.itemNumber, a.clientItemNumber, a.managedFl, a.sxLPP, a.sales
         <Field Name="rcvexrate">
           <DataField>rcvexrate</DataField>
           <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="poehCurrencyty">
+          <DataField>poehCurrencyty</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="PriceBaseCur">
           <DataField>PriceBaseCur</DataField>
@@ -1392,7 +1395,7 @@ order by
                   <Width>0.38542in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.67708in</Width>
+                  <Width>0.71875in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.83333in</Width>
@@ -1477,6 +1480,12 @@ order by
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.83333in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
@@ -5549,6 +5558,106 @@ order by
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox611</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <BackgroundColor>LightBlue</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox518">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox518</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <BackgroundColor>LightBlue</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox664">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox664</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -10746,6 +10855,110 @@ order by
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox522">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Non G/L Currency Profit</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox522</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <BackgroundColor>LightBlue</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox665">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Non G/L Currency Margin</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox665</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <BackgroundColor>LightBlue</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
@@ -15164,7 +15377,7 @@ order by
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!CurrentSalesPrice.Value=0,0,((Fields!CurrentSalesPrice.Value*Fields!SExch.Value)-(Fields!CurrentPurPrice.Value*Fields!PExch.Value))/(Fields!CurrentSalesPrice.Value*Fields!SExch.Value))</Value>
+                                  <Value>=IIF(Fields!CurrentSalesPrice.Value=0,0,((Fields!CurrentSalesPrice.Value*Fields!SExch.Value)-(Fields!CurrentPurPrice.Value*Fields!PExch.Value))/(iif(Fields!CurrentSalesPrice.Value = 0,1,Fields!CurrentSalesPrice.Value)*Fields!SExch.Value))</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -15273,7 +15486,6 @@ order by
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -15295,6 +15507,68 @@ order by
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>rebateAmt</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox530">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>= iif(Fields!poehCurrencyty.Value = Fields!currencyTy.Value,(Fields!OrigPrice.Value / Fields!Pack.Value  - Fields!price.Value) * Fields!QtyShip.Value,"**")</Value>
+                                  <Style>
+                                    <Format>#,0.00;(#,0.00)</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox530</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox666">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=iif(Fields!OrigPrice.Value = 0,"**", iif(Fields!poehCurrencyty.Value = Fields!currencyTy.Value,(Fields!OrigPrice.Value / Fields!Pack.Value - Fields!price.Value) / iif (Fields!OrigPrice.Value = 0,1,Fields!OrigPrice.Value / Fields!Pack.Value),"**"))</Value>
+                                  <Style>
+                                    <Format>0.00 %</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox666</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -19800,6 +20074,108 @@ order by
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox651">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox651</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox667">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox667</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
@@ -24263,6 +24639,108 @@ order by
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox663">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox663</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox668">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox668</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </RightBorder>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
               </TablixRows>
@@ -24621,6 +25099,16 @@ order by
                     <Hidden>=iif(Parameters!ShowFeilds.Value = 2,False, True)</Hidden>
                   </Visibility>
                 </TablixMember>
+                <TablixMember>
+                  <Visibility>
+                    <Hidden>=iif(Parameters!ShowFeilds.Value = 2 And Parameters!ShowCOGS.Value = "Y",False, True)</Hidden>
+                  </Visibility>
+                </TablixMember>
+                <TablixMember>
+                  <Visibility>
+                    <Hidden>=iif(Parameters!ShowFeilds.Value = 2 And Parameters!ShowCOGS.Value = "Y",False, True)</Hidden>
+                  </Visibility>
+                </TablixMember>
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -24675,7 +25163,7 @@ order by
               </SortExpression>
             </SortExpressions>
             <Height>1.75in</Height>
-            <Width>106.52792in</Width>
+            <Width>108.56959in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -43758,7 +44246,7 @@ order by
         <Height>8.875in</Height>
         <Style />
       </Body>
-      <Width>106.52792in</Width>
+      <Width>108.87167in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

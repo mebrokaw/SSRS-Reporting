@@ -24,6 +24,9 @@
               <Width>2.16667in</Width>
             </TablixColumn>
             <TablixColumn>
+              <Width>3.20833in</Width>
+            </TablixColumn>
+            <TablixColumn>
               <Width>0.89583in</Width>
             </TablixColumn>
             <TablixColumn>
@@ -249,6 +252,36 @@
                         </Paragraph>
                       </Paragraphs>
                       <rd:DefaultName>Textbox11</rd:DefaultName>
+                      <Style>
+                        <Border>
+                          <Color>LightGrey</Color>
+                          <Style>Solid</Style>
+                        </Border>
+                        <PaddingLeft>2pt</PaddingLeft>
+                        <PaddingRight>2pt</PaddingRight>
+                        <PaddingTop>2pt</PaddingTop>
+                        <PaddingBottom>2pt</PaddingBottom>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="Textbox12">
+                      <CanGrow>true</CanGrow>
+                      <KeepTogether>true</KeepTogether>
+                      <Paragraphs>
+                        <Paragraph>
+                          <TextRuns>
+                            <TextRun>
+                              <Value>Vendor Item</Value>
+                              <Style />
+                            </TextRun>
+                          </TextRuns>
+                          <Style />
+                        </Paragraph>
+                      </Paragraphs>
+                      <rd:DefaultName>Textbox12</rd:DefaultName>
                       <Style>
                         <Border>
                           <Color>LightGrey</Color>
@@ -989,6 +1022,36 @@
                 </TablixCell>
                 <TablixCell>
                   <CellContents>
+                    <Textbox Name="VendorItem">
+                      <CanGrow>true</CanGrow>
+                      <KeepTogether>true</KeepTogether>
+                      <Paragraphs>
+                        <Paragraph>
+                          <TextRuns>
+                            <TextRun>
+                              <Value>=Fields!VendorItem.Value</Value>
+                              <Style />
+                            </TextRun>
+                          </TextRuns>
+                          <Style />
+                        </Paragraph>
+                      </Paragraphs>
+                      <rd:DefaultName>VendorItem</rd:DefaultName>
+                      <Style>
+                        <Border>
+                          <Color>LightGrey</Color>
+                          <Style>Solid</Style>
+                        </Border>
+                        <PaddingLeft>2pt</PaddingLeft>
+                        <PaddingRight>2pt</PaddingRight>
+                        <PaddingTop>2pt</PaddingTop>
+                        <PaddingBottom>2pt</PaddingBottom>
+                      </Style>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
                     <Textbox Name="Class">
                       <CanGrow>true</CanGrow>
                       <KeepTogether>true</KeepTogether>
@@ -1583,6 +1646,7 @@
             <TablixMember />
             <TablixMember />
             <TablixMember />
+            <TablixMember />
           </TablixMembers>
         </TablixColumnHierarchy>
         <TablixRowHierarchy>
@@ -1597,7 +1661,7 @@
         </TablixRowHierarchy>
         <DataSetName>VendingData</DataSetName>
         <Height>0.5in</Height>
-        <Width>29.09375in</Width>
+        <Width>32.30208in</Width>
         <Style>
           <Border>
             <Style>None</Style>
@@ -1608,7 +1672,7 @@
     <Height>0.58333in</Height>
     <Style />
   </Body>
-  <Width>29.19792in</Width>
+  <Width>32.61458in</Width>
   <Page>
     <LeftMargin>1in</LeftMargin>
     <RightMargin>1in</RightMargin>
@@ -1632,7 +1696,7 @@
     <DataSet Name="VendingData">
       <Query>
         <DataSourceName>SKFVending</DataSourceName>
-        <CommandText>SELECT        Bin.Station, Bin.MyNo, Item.Code, Item.Vendor, Item.Description1, Item.Description2, ISNULL(TransData.Quantity, 0) AS Turns, ISNULL(TransData.Quantity, 0) * Item.AvgUnitCost AS TurnsCost, 
+        <CommandText>SELECT        MyUsage.Station, MyUsage.Bin AS MyNo, Item.Code, Item.Vendor, Item.Description1, Item.Description2, ISNULL(TransData.Quantity, 0) AS Turns, ISNULL(TransData.Quantity, 0) * Item.AvgUnitCost AS TurnsCost, 
                          CASE WHEN Bin.Minimum = 0 THEN ISNULL(RoboMinMax.MyMin, 0) ELSE Bin.Minimum END AS Minimum, CASE WHEN Bin.Maximum = 0 THEN ISNULL(RoboMinMax.MyMax, 0) 
                          ELSE Bin.Maximum END AS Maximum, MyUsage.YtdUsage AS YTDIssues, MyUsage.YTDCost, MyUsage.LyUsage AS LYRIssues, MyUsage.LyCost AS LYRCost, Item.IssueCost, TransData.LastIssue,
                              (SELECT        MAX(MaxQty) AS MaxQty
@@ -1640,9 +1704,15 @@
                                                          FROM            skfFalconerRpt_MyTran AS MyTran
                                                          WHERE        (MyDate &gt; DATEADD(dd, - 365, CAST(GETDATE() AS date))) AND (Item = Item.Code) AND (Type IN ('i', 'b', 'a', 'ab'))
                                                          GROUP BY Item, MONTH(MyDate), YEAR(MyDate)
-                                                         ORDER BY Item, MaxQty DESC) AS Data) AS SpikeMonth, Bin.onHand, Bin.BurnQty, Item.CField1, Item.CField2, Item.CField3, Item.CField4, Item.Class
-FROM            skfFalconerRpt_Item AS Item INNER JOIN
-                         skfFalconerRpt_Bin AS Bin ON Item.Code = Bin.Item LEFT OUTER JOIN
+                                                         ORDER BY Item, MaxQty DESC) AS Data) AS SpikeMonth, Bin.onHand, Bin.BurnQty, Item.CField1, Item.CField2, Item.CField3, Item.CField4, Item.Class, Item.VendorItem
+FROM            (SELECT        Station, Bin, Item, SUM(CAST(Quantity AS Real) + CAST(BurnQty AS Real)) * CAST(PackQty AS Real) / 12 * - 1 AS Quantity, MAX(MyDate) AS LastIssue
+                          FROM            skfFalconerRpt_MyTran AS MyTran_1
+                          WHERE        (MyDate &gt; DATEADD(dd, - 365, CAST(GETDATE() AS Date))) AND (Type IN ('i', 'b', 'a', 'ab')) OR
+                                                    (Type IN ('p')) AND (YEAR(MyDate) &gt;= YEAR(GETDATE()) - 1) AND (BurnQty + Quantity &lt;&gt; 0) AND (Type = 'P') AND (Comment LIKE 'Missing%' OR
+                                                    Comment LIKE 'pou%' OR
+                                                    Comment LIKE 'Return%')
+                          GROUP BY Station, Bin, Item, PackQty) AS TransData RIGHT OUTER JOIN
+                         skfFalconerRpt_Item AS Item INNER JOIN
                              (SELECT        Station, Item, Bin, SUM(CASE WHEN Year([MyDate]) = Year(Getdate()) THEN ([Quantity] + [BurnQty]) * - 1 ELSE 0 END) AS YtdUsage, SUM(CASE WHEN Year([MyDate]) = Year(Getdate()) 
                                                          THEN ([Quantity] + [BurnQty]) * - 1 * UnitPrice ELSE 0 END) AS YTDCost, SUM(CASE WHEN Year([MyDate]) = Year(Getdate()) - 1 THEN ([Quantity] + [BurnQty]) * - 1 ELSE 0 END) AS LyUsage, 
                                                          SUM(CASE WHEN Year([MyDate]) = Year(Getdate()) - 1 THEN ([Quantity] + [BurnQty]) * - 1 * UnitPrice ELSE 0 END) AS LyCost
@@ -1651,15 +1721,9 @@ FROM            skfFalconerRpt_Item AS Item INNER JOIN
                                                          (Type IN ('p')) AND (YEAR(MyDate) &gt;= YEAR(GETDATE()) - 1) AND (BurnQty + Quantity &lt;&gt; 0) AND (Type = 'P') AND (Comment LIKE 'Missing%' OR
                                                          Comment LIKE 'pou%' OR
                                                          Comment LIKE 'Return%')
-                               GROUP BY Station, Item, Bin) AS MyUsage ON Bin.Station = MyUsage.Station AND Bin.MyNo = MyUsage.Bin AND Bin.Item = MyUsage.Item LEFT OUTER JOIN
-                         skfFalconerRpt_RoboMinMax AS RoboMinMax ON Bin.Station = RoboMinMax.Station AND Bin.Item = RoboMinMax.Item LEFT OUTER JOIN
-                             (SELECT        Station, Bin, Item, SUM(CAST(Quantity AS Real) + CAST(BurnQty AS Real)) * CAST(PackQty AS Real) / 12 * - 1 AS Quantity, MAX(MyDate) AS LastIssue
-                               FROM            skfFalconerRpt_MyTran AS MyTran_1
-                               WHERE        (MyDate &gt; DATEADD(dd, - 365, CAST(GETDATE() AS Date))) AND (Type IN ('i', 'b', 'a', 'ab')) OR
-                                                         (Type IN ('p')) AND (YEAR(MyDate) &gt;= YEAR(GETDATE()) - 1) AND (BurnQty + Quantity &lt;&gt; 0) AND (Type = 'P') AND (Comment LIKE 'Missing%' OR
-                                                         Comment LIKE 'pou%' OR
-                                                         Comment LIKE 'Return%')
-                               GROUP BY Station, Bin, Item, PackQty) AS TransData ON Bin.Station = TransData.Station AND Bin.MyNo = TransData.Bin AND Bin.Item = TransData.Item</CommandText>
+                               GROUP BY Station, Item, Bin) AS MyUsage ON Item.itemNo = MyUsage.Item INNER JOIN
+                         skfFalconerRpt_RoboMinMax AS RoboMinMax ON MyUsage.Station = RoboMinMax.Station AND MyUsage.Item = RoboMinMax.Item LEFT OUTER JOIN
+                         skfFalconerRpt_Bin AS Bin ON MyUsage.Station = Bin.Station AND MyUsage.Bin = Bin.MyNo ON TransData.Station = MyUsage.Station AND TransData.Item = MyUsage.Item AND TransData.Bin = MyUsage.Bin</CommandText>
       </Query>
       <Fields>
         <Field Name="Station">
@@ -1756,6 +1820,10 @@ FROM            skfFalconerRpt_Item AS Item INNER JOIN
         </Field>
         <Field Name="Class">
           <DataField>Class</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="VendorItem">
+          <DataField>VendorItem</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
